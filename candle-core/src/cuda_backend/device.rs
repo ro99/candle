@@ -80,6 +80,14 @@ impl CudaDevice {
                 unsafe { func.launch(cfg, params) }.w()?;
                 CudaStorageSlice::U32(data)
             }
+            DType::I16 => {
+                // SAFETY: Set later by running the fill kernel.
+                let data = unsafe { self.alloc::<i16>(elem_count) }.w()?;
+                let func = self.get_or_load_func("fill_i16", kernels::FILL)?;
+                let params = (&data, v as i16, elem_count);
+                unsafe { func.launch(cfg, params) }.w()?;
+                CudaStorageSlice::I16(data)
+            }
             DType::I32 => {
                 // SAFETY: Set later by running the fill kernel.
                 let data = unsafe { self.alloc::<i32>(elem_count) }.w()?;
@@ -207,6 +215,10 @@ impl BackendDevice for CudaDevice {
                 let data = self.alloc_zeros::<u32>(elem_count).w()?;
                 CudaStorageSlice::U32(data)
             }
+            DType::I16 => {
+                let data = self.alloc_zeros::<i16>(elem_count).w()?;
+                CudaStorageSlice::I16(data)
+            }
             DType::I32 => {
                 let data = self.alloc_zeros::<i32>(elem_count).w()?;
                 CudaStorageSlice::I32(data)
@@ -244,7 +256,7 @@ impl BackendDevice for CudaDevice {
         let slice = match dtype {
             // TODO: Add support for F16 and BF16 though this is likely to require some upstream
             // cudarc changes.
-            DType::U8 | DType::U32 | DType::I64 | DType::I32 | DType::F16 | DType::BF16 => {
+            DType::U8 | DType::U32 | DType::I64 | DType::I32 | DType::I16 | DType::F16 | DType::BF16 => {
                 Err(CudaError::UnsupportedDtype {
                     dtype,
                     op: "rand_uniform",
@@ -288,7 +300,7 @@ impl BackendDevice for CudaDevice {
             elem_count
         };
         let slice = match dtype {
-            DType::U8 | DType::U32 | DType::I32 | DType::I64 | DType::F16 | DType::BF16 => {
+            DType::U8 | DType::U32 | DType::I16 | DType::I32 | DType::I64 | DType::F16 | DType::BF16 => {
                 Err(CudaError::UnsupportedDtype {
                     dtype,
                     op: "rand_normal",
@@ -329,6 +341,10 @@ impl BackendDevice for CudaDevice {
             DType::U32 => {
                 let data = self.alloc::<u32>(elem_count).w()?;
                 CudaStorageSlice::U32(data)
+            }
+            DType::I16 => {
+                let data = self.alloc::<i16>(elem_count).w()?;
+                CudaStorageSlice::I16(data)
             }
             DType::I32 => {
                 let data = self.alloc::<i32>(elem_count).w()?;
@@ -371,6 +387,10 @@ impl BackendDevice for CudaDevice {
                 let data = self.htod_sync_copy(storage).w()?;
                 CudaStorageSlice::U32(data)
             }
+            CpuStorageRef::I16(storage) => {
+                let data = self.htod_sync_copy(storage).w()?;
+                CudaStorageSlice::I16(data)
+            }
             CpuStorageRef::I32(storage) => {
                 let data = self.htod_sync_copy(storage).w()?;
                 CudaStorageSlice::I32(data)
@@ -412,6 +432,10 @@ impl BackendDevice for CudaDevice {
                 let data = self.htod_sync_copy(storage).w()?;
                 CudaStorageSlice::U32(data)
             }
+            CpuStorage::I16(storage) => {
+                let data = self.htod_sync_copy(storage).w()?;
+                CudaStorageSlice::I16(data)
+            }
             CpuStorage::I32(storage) => {
                 let data = self.htod_sync_copy(storage).w()?;
                 CudaStorageSlice::I32(data)
@@ -452,6 +476,10 @@ impl BackendDevice for CudaDevice {
             CpuStorage::U32(storage) => {
                 let data = self.htod_copy(storage).w()?;
                 CudaStorageSlice::U32(data)
+            }
+            CpuStorage::I16(storage) => {
+                let data = self.htod_copy(storage).w()?;
+                CudaStorageSlice::I16(data)
             }
             CpuStorage::I32(storage) => {
                 let data = self.htod_copy(storage).w()?;
