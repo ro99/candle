@@ -2175,7 +2175,7 @@ impl BackendDevice for MetalDevice {
         }
         seed_buffer.did_modify_range(metal::NSRange::new(0, 4));
 
-        *self.seed_value.write().unwrap() = seed;
+        *self.seed_value.write().unwrap() = seed as u64;
 
         Ok(())
     }
